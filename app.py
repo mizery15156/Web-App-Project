@@ -403,24 +403,217 @@ form.inline{display:inline}
 {% block content %}{% endblock %}
 </main></body></html>"""
 
-AUTH = """{% extends 'base.html' %}{% block content %}
-<form class="panel" method="post">
-<input type="hidden" name="csrf" value="{{ csrf }}">
-<h2>{{ 'Create your account' if mode == 'register' else 'Log in' }}</h2>
-<label>Email<input type="email" name="email" required autocomplete="email"></label>
-<label>Password<input type="password" name="password" required {{ 'minlength=8' if mode == 'register' }} autocomplete="{{ 'new-password' if mode == 'register' else 'current-password' }}"></label>
-<button>{{ 'Create account' if mode == 'register' else 'Log in' }}</button>
-<p class="sub">{% if mode == 'register' %}Already have an account? <a href="{{ url_for('login') }}">Log in</a>
-{% else %}New here? <a href="{{ url_for('register') }}">Create an account</a>{% endif %}</p>
-</form>
-{% if mode == 'login' %}
-<form class="panel" method="post" action="{{ url_for('resend') }}" style="margin-top:16px">
-<input type="hidden" name="csrf" value="{{ csrf }}">
-<h2>Didn't get the confirmation email?</h2>
-<label>Email<input type="email" name="email" required autocomplete="email"></label>
-<button class="quiet">Resend confirmation</button>
-</form>
-{% endif %}{% endblock %}"""
+AUTH = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ 'Create account' if mode == 'register' else 'Log in' }} · School Schedule Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{--board:#14313f;--paper:#f6f7f3;--ink:#14313f;--muted:#5f7480;--line:#d9dfd9;--sky:#7cc4f2;--mint:#7fd6b0;--sun:#f4cf5c;--violet:#a99cf5;--pink:#f4a0bf;--coral:#d9573f;--row:46px}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:"Bricolage Grotesque",system-ui,"Segoe UI",sans-serif;color:var(--ink);background:var(--paper)}
+.shell{min-height:100%;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr)}
+
+/* left: the timetable that builds itself */
+.board{background:var(--board);color:#fff;padding:40px clamp(24px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between;gap:32px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600}
+.mark{display:grid;grid-template-columns:1fr 1fr;gap:3px;width:22px}
+.mark i{display:block;aspect-ratio:1;border-radius:3px}
+.mark i:nth-child(1){background:var(--sky)}.mark i:nth-child(2){background:var(--sun)}
+.mark i:nth-child(3){background:var(--pink)}.mark i:nth-child(4){background:var(--mint)}
+.board h1{font-size:clamp(2.3rem,4.6vw,4.2rem);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:0 0 14px;max-width:10ch}
+.board .sub{margin:0;color:#b6c9d3;max-width:34ch}
+.tt{max-width:640px;width:100%}
+.tt-days{display:grid;grid-template-columns:34px repeat(5,1fr);column-gap:8px;font-size:.78rem;color:#9fb6c2;padding-bottom:8px}
+.tt-body{display:grid;grid-template-columns:34px 1fr;column-gap:8px}
+.hours{display:grid;grid-template-rows:repeat(5,var(--row));font-size:.72rem;color:#9fb6c2}
+.cols{position:relative;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,var(--row));column-gap:8px;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.1) 0 1px,transparent 1px var(--row))}
+.b{grid-column:var(--c);grid-row:var(--r) / span var(--s);margin:2px 0;padding:5px 8px;border-radius:8px;background:var(--bg);color:var(--board);font-size:.74rem;line-height:1.2;font-weight:600;overflow:hidden;transition:transform .2s,box-shadow .2s;animation:drop .8s cubic-bezier(.2,1.3,.4,1) var(--d) backwards}
+.b:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(0,0,0,.3)}
+.b small{display:block;font-weight:400;opacity:.75}
+.sky{--bg:var(--sky)}.mint{--bg:var(--mint)}.sun{--bg:var(--sun)}.violet{--bg:var(--violet)}.pink{--bg:var(--pink)}
+.now{position:absolute;left:-6px;right:0;top:0;height:2px;background:var(--sun);box-shadow:0 0 14px rgba(244,207,92,.8);animation:sweep 9s ease-in-out 1.8s infinite alternate backwards;pointer-events:none}
+.now::before{content:"";position:absolute;left:0;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--sun)}
+@keyframes drop{from{opacity:0;transform:translateY(-40px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes sweep{0%{opacity:0;transform:translateY(0)}8%{opacity:1}92%{opacity:1}100%{opacity:0;transform:translateY(calc(var(--row)*5))}}
+
+/* right: the forms */
+.side{display:grid;place-items:center;padding:40px 24px}
+.auth{width:100%;max-width:400px}
+.seg{position:relative;display:grid;grid-template-columns:1fr 1fr;background:#e7ebe5;border-radius:999px;padding:4px;margin-bottom:30px}
+.seg::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);background:#fff;border-radius:999px;box-shadow:0 1px 3px rgba(20,49,63,.18);transition:transform .4s cubic-bezier(.3,1.3,.5,1)}
+#auth[data-mode=register] .seg::before{transform:translateX(100%)}
+.seg a{position:relative;text-align:center;padding:10px 0;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:600;transition:color .2s}
+.seg a[aria-current]{color:var(--ink)}
+.flash{background:#fff;border:1px solid var(--line);border-left:5px solid var(--sun);border-radius:10px;padding:12px 14px;margin-bottom:20px;font-size:.92rem;animation:slide .5s cubic-bezier(.2,.9,.3,1) backwards}
+@keyframes slide{from{opacity:0;transform:translateY(-10px)}}
+.forms{display:grid}
+.pane{grid-area:1 / 1;opacity:0;visibility:hidden;transform:translateX(26px);transition:opacity .3s,transform .4s cubic-bezier(.2,.9,.3,1),visibility .3s}
+#auth[data-mode=login] .pane.login,#auth[data-mode=register] .pane.register{opacity:1;visibility:visible;transform:none}
+#auth[data-mode=register] .pane.login{transform:translateX(-26px)}
+.pane h2{font-size:1.95rem;letter-spacing:-.025em;font-weight:800;margin:0 0 6px}
+.lead{margin:0 0 24px;color:var(--muted)}
+.field{position:relative;margin-bottom:14px}
+.field input{width:100%;height:56px;padding:22px 14px 6px;border:1.5px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--ink);transition:border-color .2s,box-shadow .2s}
+.field input:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 4px rgba(244,207,92,.5)}
+.field label{position:absolute;left:15px;top:17px;color:var(--muted);pointer-events:none;transition:top .18s,font-size .18s}
+.field input:focus + label,.field input:not(:placeholder-shown) + label{top:7px;font-size:.72rem}
+.eye{position:absolute;right:8px;top:8px;height:40px;padding:0 10px;border:0;border-radius:8px;background:none;color:var(--muted);font:inherit;font-size:.82rem;cursor:pointer}
+.eye:hover{color:var(--ink)}
+.meter{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:2px 0 8px}
+.meter i{height:4px;border-radius:2px;background:var(--line);transition:background .3s}
+.meter[data-s="1"] i:nth-child(1){background:var(--coral)}
+.meter[data-s="2"] i:nth-child(-n+2){background:var(--sun)}
+.meter[data-s="3"] i{background:var(--mint)}
+.hint{margin:0 0 18px;font-size:.82rem;color:var(--muted);min-height:1.3em}
+.go{position:relative;isolation:isolate;overflow:hidden;width:100%;height:54px;border:0;border-radius:12px;background:var(--ink);color:#fff;font:inherit;font-size:1rem;font-weight:700;cursor:pointer}
+.go::before{content:"";position:absolute;inset:0;background:var(--sun);transform:translateX(-101%);transition:transform .45s cubic-bezier(.2,.9,.3,1);z-index:-1}
+.go:hover,.go:focus-visible{color:var(--ink)}
+.go:hover::before,.go:focus-visible::before{transform:none}
+.go:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.go.busy{pointer-events:none}
+.go.busy span{opacity:0}
+.go.busy::after{content:"";position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px 0 0 -10px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.note{margin:16px 0 0;font-size:.85rem;color:var(--muted)}
+details{margin-top:22px;font-size:.9rem;color:var(--muted)}
+summary{cursor:pointer;width:fit-content}
+summary:focus-visible,.seg a:focus-visible,.eye:focus-visible,.ghost:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+details form{margin-top:14px}
+.ghost{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;background:none;color:var(--ink);font:inherit;font-weight:600;cursor:pointer;transition:background .2s}
+.ghost:hover{background:#e7ebe5}
+
+@media (max-width:860px){
+  :root{--row:30px}
+  .shell{grid-template-columns:1fr}
+  .board{padding:22px 20px 26px;gap:18px}
+  .board h1{font-size:2rem;max-width:none;margin:0}
+  .board .sub,.b small{display:none}
+  .b{padding:4px 6px}
+  .side{align-items:start;padding:28px 20px 44px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+  .now{transform:translateY(calc(var(--row)*2))}
+}
+</style></head>
+<body>
+{% set msgs = get_flashed_messages() %}
+<div class="shell">
+  <aside class="board">
+    <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>School Schedule Tracker</div>
+    <div>
+      <h1>Your week, in order.</h1>
+      <p class="sub">Subjects, codes and class times, all on one timetable.</p>
+    </div>
+    <div class="tt" aria-hidden="true">
+      <div class="tt-days"><span></span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span></div>
+      <div class="tt-body">
+        <div class="hours"><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span></div>
+        <div class="cols">
+          <div class="b sky" style="--c:1;--r:1;--s:2;--d:.45s">MATH101<small>Algebra</small></div>
+          <div class="b pink" style="--c:1;--r:4;--s:1;--d:1.15s">ART105<small>Drawing</small></div>
+          <div class="b mint" style="--c:2;--r:2;--s:2;--d:.6s">BIO201<small>Biology</small></div>
+          <div class="b sun" style="--c:3;--r:1;--s:1;--d:.75s">ENG102<small>Literature</small></div>
+          <div class="b violet" style="--c:3;--r:3;--s:2;--d:.9s">CS110<small>Programming</small></div>
+          <div class="b sky" style="--c:4;--r:2;--s:1;--d:1.05s">MATH101<small>Algebra</small></div>
+          <div class="b mint" style="--c:4;--r:4;--s:2;--d:1.2s">PE100<small>Fitness</small></div>
+          <div class="b mint" style="--c:5;--r:1;--s:2;--d:.85s">BIO201<small>Lab</small></div>
+          <div class="b sun" style="--c:5;--r:4;--s:1;--d:1.3s">ENG102<small>Essay</small></div>
+          <div class="now"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="side">
+    <div class="auth" id="auth" data-mode="{{ mode }}" data-login="{{ url_for('login') }}" data-register="{{ url_for('register') }}">
+      <nav class="seg" aria-label="Choose log in or create account">
+        <a href="{{ url_for('login') }}" data-go="login" {{ 'aria-current=page' if mode == 'login' }}>Log in</a>
+        <a href="{{ url_for('register') }}" data-go="register" {{ 'aria-current=page' if mode == 'register' }}>Create account</a>
+      </nav>
+      {% for m in msgs %}<div class="flash" role="status">{{ m }}</div>{% endfor %}
+
+      <div class="forms">
+        <section class="pane login" aria-label="Log in">
+          <h2>Welcome back</h2>
+          <p class="lead">Log in to see your week.</p>
+          <form method="post" action="{{ url_for('login') }}" data-busy>
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <div class="field"><input id="l-email" type="email" name="email" placeholder=" " required autocomplete="email"><label for="l-email">Email address</label></div>
+            <div class="field"><input id="l-pw" type="password" name="password" placeholder=" " required autocomplete="current-password"><label for="l-pw">Password</label><button type="button" class="eye">Show</button></div>
+            <button class="go"><span>Log in</span></button>
+          </form>
+          <details>
+            <summary>Didn’t get the confirmation email?</summary>
+            <form method="post" action="{{ url_for('resend') }}">
+              <input type="hidden" name="csrf" value="{{ csrf }}">
+              <div class="field"><input id="s-email" type="email" name="email" placeholder=" " required autocomplete="email"><label for="s-email">Email address</label></div>
+              <button class="ghost">Resend confirmation</button>
+            </form>
+          </details>
+        </section>
+
+        <section class="pane register" aria-label="Create account">
+          <h2>Start your week</h2>
+          <p class="lead">Create an account to save your subjects and schedule.</p>
+          <form method="post" action="{{ url_for('register') }}" data-busy>
+            <input type="hidden" name="csrf" value="{{ csrf }}">
+            <div class="field"><input id="r-email" type="email" name="email" placeholder=" " required autocomplete="email"><label for="r-email">Email address</label></div>
+            <div class="field"><input id="r-pw" type="password" name="password" placeholder=" " required minlength="8" autocomplete="new-password"><label for="r-pw">Password</label><button type="button" class="eye">Show</button></div>
+            <div class="meter" id="meter" data-s="0" aria-hidden="true"><i></i><i></i><i></i></div>
+            <p class="hint" id="hint" aria-live="polite">At least 8 characters</p>
+            <button class="go"><span>Create account</span></button>
+            <p class="note">We’ll email you a link to confirm your address before you can log in.</p>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script>
+(function(){
+  var root=document.getElementById('auth'),tabs=root.querySelectorAll('[data-go]');
+  var urls={login:root.dataset.login,register:root.dataset.register};
+  var titles={login:'Log in',register:'Create account'};
+  function setMode(m){
+    root.dataset.mode=m;
+    tabs.forEach(function(t){if(t.dataset.go===m){t.setAttribute('aria-current','page')}else{t.removeAttribute('aria-current')}});
+    document.title=titles[m]+' · School Schedule Tracker';
+    try{history.replaceState(null,'',urls[m])}catch(e){}
+  }
+  tabs.forEach(function(t){t.addEventListener('click',function(e){e.preventDefault();setMode(t.dataset.go)})});
+
+  document.querySelectorAll('.eye').forEach(function(b){
+    b.addEventListener('click',function(){
+      var i=b.parentNode.querySelector('input'),show=i.type==='password';
+      i.type=show?'text':'password';b.textContent=show?'Hide':'Show';
+    });
+  });
+
+  var pw=document.getElementById('r-pw'),meter=document.getElementById('meter'),hint=document.getElementById('hint');
+  var msgs=['At least 8 characters','Okay. Add a number or a symbol for more','Good password','Strong password'];
+  pw.addEventListener('input',function(){
+    var p=pw.value,s=0;
+    if(p.length>=8){s=1;if(/[A-Za-z]/.test(p)&&/[0-9]/.test(p)){s=2}if(s===2&&(p.length>=12||/[^A-Za-z0-9]/.test(p))){s=3}}
+    meter.dataset.s=s;hint.textContent=msgs[s];
+  });
+
+  document.querySelectorAll('form[data-busy]').forEach(function(f){
+    f.addEventListener('submit',function(e){
+      if(f.dataset.sent){e.preventDefault();return}
+      f.dataset.sent='1';f.querySelector('.go').classList.add('busy');
+    });
+  });
+  window.addEventListener('pageshow',function(){
+    document.querySelectorAll('form[data-busy]').forEach(function(f){delete f.dataset.sent;f.querySelector('.go').classList.remove('busy')});
+  });
+})();
+</script>
+</body></html>"""
 
 SLOT_FORM = """<input type="hidden" name="csrf" value="{{ csrf }}">
 <label>Subject<select name="subject_id" required>
