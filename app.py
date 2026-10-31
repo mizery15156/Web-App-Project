@@ -506,7 +506,7 @@ details form{margin-top:14px}
   <aside class="board">
     <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>School Schedule Tracker</div>
     <div>
-      <h1>Your week, in order.</h1>
+      <h1>UMTC SCHEDULE TRACKET.</h1>
       <p class="sub">Subjects, codes and class times, all on one timetable.</p>
     </div>
     <div class="tt" aria-hidden="true">
@@ -514,10 +514,10 @@ details form{margin-top:14px}
       <div class="tt-body">
         <div class="hours"><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span></div>
         <div class="cols">
-          <div class="b sky" style="--c:1;--r:1;--s:2;--d:.45s">MATH101<small>Algebra</small></div>
-          <div class="b pink" style="--c:1;--r:4;--s:1;--d:1.15s">ART105<small>Drawing</small></div>
-          <div class="b mint" style="--c:2;--r:2;--s:2;--d:.6s">BIO201<small>Biology</small></div>
-          <div class="b sun" style="--c:3;--r:1;--s:1;--d:.75s">ENG102<small>Literature</small></div>
+          <div class="b sky" style="--c:1;--r:1;--s:2;--d:.45s">CCE 105<small>Algebra</small></div>
+          <div class="b pink" style="--c:1;--r:4;--s:1;--d:1.15s">IT5<small>Drawing</small></div>
+          <div class="b mint" style="--c:2;--r:2;--s:2;--d:.6s">PHYSICS 1<small>Biology</small></div>
+          <div class="b sun" style="--c:3;--r:1;--s:1;--d:.75s">CALCULUS<small>Literature</small></div>
           <div class="b violet" style="--c:3;--r:3;--s:2;--d:.9s">CS110<small>Programming</small></div>
           <div class="b sky" style="--c:4;--r:2;--s:1;--d:1.05s">MATH101<small>Algebra</small></div>
           <div class="b mint" style="--c:4;--r:4;--s:2;--d:1.2s">PE100<small>Fitness</small></div>
